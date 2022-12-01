@@ -1,5 +1,6 @@
-PROJECT_ID ?= prj-lg-n-odh-mllab-gcp-pilot
-REGION ?= europe-west4
+PROJECT_ID ?= <CHANGE>
+REGION ?= <CHANGE>
+ARTIFACT_REGISTRY ?= <CHANGE>
 PROJECT_NUMBER ?= $$(gcloud projects list --filter=${PROJECT_ID} --format="value(PROJECT_NUMBER)")
 CODE_BUCKET ?= serverless-spark-code-repo-${PROJECT_NUMBER}
 TEMP_BUCKET ?= serverless-spark-staging-${PROJECT_NUMBER}
@@ -44,16 +45,21 @@ build: clean ## Build Python Package with Dependencies
 	@gsutil cp -r ./dist gs://${CODE_BUCKET}
 
 image: ## Build docker image and push them to gcr.io
-	@echo "Building docker image. PROJECT_ID=${PROJECT_ID}"
+	@echo "Building docker image. PROJECT_ID=${PROJECT_ID}, ARTIFACT_REGISTRY=${ARTIFACT_REGISTRY}"
 	@docker build -t spark-dataproc-serverless-example .
-	@docker tag spark-dataproc-serverless-example europe-west4-docker.pkg.dev/prj-lg-n-odh-mllab-gcp-pilot/registry/spark-dataproc-serverless-example:latest
-	@docker push europe-west4-docker.pkg.dev/prj-lg-n-odh-mllab-gcp-pilot/registry/spark-dataproc-serverless-example:latest
-
+	@docker tag spark-dataproc-serverless-example ${ARTIFACT_REGISTRY}/${PROJECT_ID}/registry/spark-dataproc-serverless-example
+	@docker push ${ARTIFACT_REGISTRY}/${PROJECT_ID}/registry/spark-dataproc-serverless-example
 
 run: ## Run the dataproc serverless job
+	gcloud beta dataproc batches submit --project ${PROJECT_ID} --region ${REGION} pyspark \
+	gs://${CODE_BUCKET}/dist/main.py --py-files=gs://${CODE_BUCKET}/dist/${APP_NAME}_${VERSION_NO}.zip \
+	--subnet default --properties spark.executor.instances=2,spark.driver.cores=4,spark.executor.cores=4,spark.app.name=spark_serverless_repo_exemplar \
+	-- --project=${PROJECT_ID} --file-uri=gs://${DATA_BUCKET}/stocks.csv --temp-bq-bucket=${TEMP_BUCKET}
+
+start: ## Run the dataproc serverless job with custom container
 	@echo "Code Bucket=${CODE_BUCKET}, Region=${REGION}, Project ID=${PROJECT_ID}, Data bucket=${DATA_BUCKET}, Temp bucket=${TEMP_BUCKET}"
 	gcloud beta dataproc batches submit --project ${PROJECT_ID} --region ${REGION} pyspark \
 	gs://${CODE_BUCKET}/dist/main.py  \
-	--container-image europe-west4-docker.pkg.dev/prj-lg-n-odh-mllab-gcp-pilot/registry/spark-dataproc-serverless-example:latest \
+	--container-image ${ARTIFACT_REGISTRY}/${PROJECT_ID}/registry/spark-dataproc-serverless-example:latest \
 	--subnet default --properties spark.executor.instances=2,spark.driver.cores=4,spark.executor.cores=4,spark.app.name=spark_serverless_repo_exemplar \
 	-- --project=${PROJECT_ID} --file-uri=gs://${DATA_BUCKET}/stocks.csv --temp-bq-bucket=${TEMP_BUCKET}

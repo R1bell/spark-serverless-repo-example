@@ -53,7 +53,8 @@ REGION ?= <CHANGEME>
 
 #for example
 PROJECT_ID ?= my-gcp-project-1234
-REGION ?= europe-west2
+REGION ?= europe-west4
+ARTIFACT_REGISTRY ?= europe-west4-docker.pkg.dev
 ```
 Then run the following command from the Root Folder of this Repo
 ```shell
@@ -62,8 +63,7 @@ make setup
 This will create the following:
 * GCS Bucket `serverless-spark-code-repo-<PROJECT_NUMBER>` →Our Pyspark Code gets uploaded here
 * GCS Bucket `serverless-spark-staging-<PROJECT_NUMBER>` →Used for BQ operations
-* GCS Bucket `serverless-spark-data-<PROJECT_NUMBER>` → Our source csv file is in here 
-* Bigquery Dataset called `serverless_spark_demo` in BigQuery
+* GCS Bucket `serverless-spark-data-<PROJECT_NUMBER>` → Our source csv file is in here
 
 
 ### Packaging you Pipeline for GCP
@@ -74,4 +74,14 @@ make build
 ### Run the Pipeline
 ```shell
 make run
+```
+
+### Build and push Image
+```shell
+make image
+```
+
+### Start the pipeline with the custom container
+```shell
+make start
 ```
