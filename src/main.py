@@ -9,7 +9,6 @@ from codetiming import Timer
 from src.utils.spark_setup import start_spark
 from src.utils.timer_utils import timer_args
 from src.spark_serverless_repo_exemplar.read_file import read_file
-from src.spark_serverless_repo_exemplar.save_to_bq import save_file_to_bq
 
 
 def run(app_name: Optional[str],
@@ -24,9 +23,6 @@ def run(app_name: Optional[str],
     total_time = Timer(**timer_args("Total run time"))
     total_time.start()
 
-    dataset_name = "serverless_spark_demo"
-    table_name = "stock_prices"
-
     with Timer(**timer_args('Spark Connection')):
         spark = start_spark(app_name=app_name,
                             bucket=bucket)
@@ -35,9 +31,7 @@ def run(app_name: Optional[str],
         stocks_df = read_file(spark=spark,
                               file_uri=file_uri)
 
-    with Timer(**timer_args('Write DF to Bigquery')):
-        status = save_file_to_bq(stocks_df=stocks_df,
-                                 table=f'{dataset_name}.{table_name}')
+    stocks_df.show()
 
     total_time.stop()
     print(Timer.timers)
